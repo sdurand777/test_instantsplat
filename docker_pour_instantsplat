@@ -1,0 +1,155 @@
+
+FROM nvidia/cuda:12.1.1-cudnn8-devel-ubuntu22.04
+
+ENV NVIDIA_VISIBLE_DEVICES all
+ENV NVIDIA_DRIVER_CAPABILITIES graphics,utility,compute
+
+# tzdata
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends tzdata
+# Install base utilities
+RUN apt-get update && \
+    apt-get install -y build-essential  && \
+    apt-get install -y wget && \
+    apt-get clean && \
+    apt-get install -y sudo && \
+    apt-get install -y software-properties-common
+
+RUN apt install vim -y
+RUN apt install vim-gtk3 -y
+
+# node
+RUN apt install nodejs npm -y
+RUN npm cache clean -f
+RUN npm install -g n
+RUN n stable
+RUN n latest
+
+# python
+RUN apt install python3 -y
+RUN apt install python3-pip -y
+RUN apt install python3-venv -y
+RUN apt install python-is-python3 -y
+
+# install cmake
+RUN apt install -y libssl-dev
+RUN apt install cmake -y
+
+# autres libs
+RUN apt install ripgrep -y
+RUN apt install fd-find -y
+RUN apt install latexmk texlive-full -y
+RUN apt install git -y
+RUN apt install eog -y
+
+# install stable plus longue mais plus clean
+RUN git clone https://github.com/neovim/neovim /tmp/neovim 
+WORKDIR /tmp/neovim 
+RUN git checkout stable 
+
+RUN apt install gettext -y
+
+RUN make CMAKE_BUILD_TYPE=RelWithDebInfo 
+RUN make install
+
+RUN apt install curl -y
+RUN apt install xclip -y
+
+RUN pip install pynvim
+RUN pip install numpy
+RUN npm install -g neovim
+
+# Ajouter l'utilisateur sans mot de passe
+RUN adduser --disabled-password --gecos '' smith
+# Ajouter l'utilisateur au groupe sudo
+RUN adduser smith sudo
+# Désactiver la demande de mot de passe pour sudo
+RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+
+# Définir l'utilisateur smith
+USER smith
+# Se placer dans le dossier de l'utilisateur
+WORKDIR /home/smith
+
+# Installer git pour récupérer les repos
+# Cette fois, sudo n'est plus nécessaire car l'utilisateur "smith" n'a pas besoin de droits root pour cette installation
+RUN sudo apt-get update && sudo apt-get install -y git
+
+RUN git clone --recursive https://github.com/sdurand777/config_bashrc.git
+
+RUN git clone --recursive https://github.com/sdurand777/config_neovim.git
+
+# recuperer repo config dev
+#RUN git clone --recursive git@github.com:sdurand777/config_dev.git
+RUN mkdir -p /home/smith/.config
+
+RUN cp -r config_neovim /home/smith/.config/nvim
+
+RUN cp config_bashrc/bashrc /home/smith/.bashrc
+
+
+RUN nvim --headless -c +Lazy +qall
+RUN nvim --headless +TSUpdate +"sleep 10" +qall
+# # RUN nvim --headless +Mason +"sleep 3" +qall
+# RUN nvim --headless +MasonUpdate +"sleep 5" +qall
+#
+RUN nvim --headless +"MasonInstall pyright" +"sleep 5" +qall
+RUN nvim --headless +"MasonInstall texlab" +"sleep 5" +qall
+RUN nvim --headless +"MasonInstall cmake-language-server" +"sleep 5" +qall
+RUN nvim --headless +"MasonInstall bash-language-server" +"sleep 5" +qall
+RUN nvim --headless +"MasonInstall clangd" +"sleep 5" +qall
+RUN nvim --headless +"MasonInstall lua-language-server" +"sleep 5" +qall
+
+# -------------------------------------------------
+#  INSTALL CONDA MAMBA FOR PYTHON
+# -------------------------------------------------
+
+# Install Mamba
+ENV CONDA_DIR /home/smith/conda
+RUN wget -O /home/smith/Mambaforge.sh  "https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-$(uname)-$(uname -m).sh"
+RUN bash /home/smith/Mambaforge.sh -b -p $CONDA_DIR
+ENV PATH=$CONDA_DIR/bin:$PATH
+
+
+ENV PATH=/usr/local/cuda/bin:$PATH
+ENV LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
+
+
+COPY env_splat.yml .
+
+RUN mamba env create -f env_splat.yml
+
+RUN pip install evo --upgrade --no-binary evo
+RUN pip install gdown
+
+ARG CACHEBUST=1
+RUN git clone --recursive https://github.com/NVlabs/InstantSplat.git
+
+WORKDIR InstantSplat
+
+RUN mamba run --no-capture-output -n instantsplat mamba install ninja
+
+RUN git submodule update --init --recursive && \
+    git submodule update --init --recursive && \
+    cd submodules/dust3r/ && \
+    mkdir -p checkpoints/ && \
+    wget https://download.europe.naverlabs.com/ComputerVision/DUSt3R/DUSt3R_ViTLarge_BaseDecoder_512_dpt.pth -P checkpoints/
+
+
+#RUN mamba run --no-capture-output -n instantsplat pip install submodules/simple-knn && \
+#    sed -i '154s/p_view.z <= 0.2f/p_view.z <= 0.001f/' submodules/diff-gaussian-rasterization/cuda_rasterizer/auxiliary.h && \
+#    mamba run --no-capture-output -n instantsplat pip install submodules/diff-gaussian-rasterization && \
+#    cd submodules/dust3r/croco/models/curope/ && \
+#    mamba run --no-capture-output -n instantsplat python setup.py build_ext --inplace
+
+
+RUN conda init bash && . ~/.bashrc
+
+
+
+
+
+
+
+
+
+
