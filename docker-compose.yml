@@ -15,6 +15,7 @@ services:
       - DISPLAY=$DISPLAY
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix
+      - /home/ivm/instantsplat_dev:/home/smith/instantsplat_dev
     tty: true
 
 
