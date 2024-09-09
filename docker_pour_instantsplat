@@ -113,36 +113,40 @@ ENV PATH=$CONDA_DIR/bin:$PATH
 ENV PATH=/usr/local/cuda/bin:$PATH
 ENV LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
 
-
-COPY env_splat.yml .
-
-RUN mamba env create -f env_splat.yml
-
 RUN pip install evo --upgrade --no-binary evo
 RUN pip install gdown
 
 ARG CACHEBUST=1
-RUN git clone --recursive https://github.com/NVlabs/InstantSplat.git
+RUN git clone --recursive https://github.com/sdurand777/test_instantsplat.git
 
-WORKDIR InstantSplat
+WORKDIR test_instantsplat
 
-RUN mamba run --no-capture-output -n instantsplat mamba install ninja
+RUN git checkout src && \
+    mamba env create -f env_splat.yml && \
+    mamba run --no-capture-output -n instantsplat mamba install ninja
 
-RUN git submodule update --init --recursive && \
+RUN git checkout src && \
+    git submodule update --init --recursive && \
     git submodule update --init --recursive && \
     cd submodules/dust3r/ && \
     mkdir -p checkpoints/ && \
     wget https://download.europe.naverlabs.com/ComputerVision/DUSt3R/DUSt3R_ViTLarge_BaseDecoder_512_dpt.pth -P checkpoints/
 
 
-#RUN mamba run --no-capture-output -n instantsplat pip install submodules/simple-knn && \
-#    sed -i '154s/p_view.z <= 0.2f/p_view.z <= 0.001f/' submodules/diff-gaussian-rasterization/cuda_rasterizer/auxiliary.h && \
-#    mamba run --no-capture-output -n instantsplat pip install submodules/diff-gaussian-rasterization && \
-#    cd submodules/dust3r/croco/models/curope/ && \
-#    mamba run --no-capture-output -n instantsplat python setup.py build_ext --inplace
-
+RUN git checkout src && \
+    mamba run --no-capture-output -n instantsplat pip install submodules/simple-knn && \
+    sed -i '154s/p_view.z <= 0.2f/p_view.z <= 0.001f/' submodules/diff-gaussian-rasterization/cuda_rasterizer/auxiliary.h
 
 RUN conda init bash && . ~/.bashrc
+
+#RUN git checkout src && \
+#    mamba run --no-capture-output -n instantsplat pip install submodules/diff-gaussian-rasterization 
+
+#   && \
+#    cd submodules/dust3r/croco/models/curope/ && \
+#    mamba run --no-capture-output -n instantsplat python setup.py build_ext --inplace && \
+#    conda init bash && . ~/.bashrc
+
 
 
 
