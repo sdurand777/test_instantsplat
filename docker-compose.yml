@@ -16,6 +16,7 @@ services:
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix
       - /home/ivm/instantsplat_dev:/home/smith/instantsplat_dev
+      - /home/ivm/config_neovim/:/home/smith/.config/nvim/
     tty: true
 
 
