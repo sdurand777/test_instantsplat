@@ -137,23 +137,13 @@ RUN git checkout src && \
     mamba run --no-capture-output -n instantsplat pip install submodules/simple-knn && \
     sed -i '154s/p_view.z <= 0.2f/p_view.z <= 0.001f/' submodules/diff-gaussian-rasterization/cuda_rasterizer/auxiliary.h
 
-RUN conda init bash && . ~/.bashrc
 
-#RUN git checkout src && \
-#    mamba run --no-capture-output -n instantsplat pip install submodules/diff-gaussian-rasterization 
+RUN git checkout src && \
+    mamba run --no-capture-output -n instantsplat pip install submodules/diff-gaussian-rasterization 
 
-#   && \
-#    cd submodules/dust3r/croco/models/curope/ && \
-#    mamba run --no-capture-output -n instantsplat python setup.py build_ext --inplace && \
-#    conda init bash && . ~/.bashrc
-
-
-
-
-
-
-
-
-
+RUN git checkout src && \
+    cd submodules/dust3r/croco/models/curope/ && \
+    mamba run --no-capture-output -n instantsplat python setup.py build_ext --inplace && \
+    conda init bash && . ~/.bashrc
 
 
